@@ -1,6 +1,18 @@
 #include <iostream>
 using namespace std;   // if only using 1 namespace, can leave out   std::   in all code
 
+struct InventoryItem {
+    string name;
+    double price;
+    int quantity;
+
+    void display() {   
+        cout << "Name: " << name << endl;
+        cout << "Price: " << price << endl;
+        cout << "Quantity: " << quantity << endl;
+    }
+};
+
 /*
 int main(int argc, char const *argv[])
 {
@@ -42,6 +54,11 @@ int main(int argc, char const *argv[])
         cout << "You are older than me" << endl;
     }
 
+    InventoryItem item1;
+    item1.name = "Widget";
+    item1.price = 1;
+    item1.quantity = 100;
+    item1.display();
 
     return 0;
 }
