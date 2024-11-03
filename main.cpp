@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <fstream>
 using namespace std;
 
 class Product {
@@ -29,6 +30,21 @@ public:
         cout << "Price: $" << price << endl;
         cout << "Quantity: " << quantity << endl;
         cout << "Total Value: $" << total_value << endl << endl;
+    }
+
+    // Method to save product data to a file
+    void save(ofstream& out) const {
+        out << name << endl;
+        out << price << endl;
+        out << quantity << endl;
+    }
+
+    // Method to load product data from a file
+    void load(ifstream& in) {
+        in >> name;
+        in >> price;
+        in >> quantity;
+        setTotalValue();
     }
 };
 
@@ -89,6 +105,40 @@ public:
         }
         return total;
     }
+
+    // Method to save inventory data to a file
+    void saveToFile(const string& filename) const {
+        ofstream out(filename);
+        if (out.is_open()) {
+            out << products.size() << endl;
+            for (const auto& product : products) {
+                product->save(out);
+            }
+            out.close();
+            cout << "Inventory saved to " << filename << endl;
+        } else {
+            cout << "Failed to open file for writing.\n";
+        }
+    }
+
+    // Method to load inventory data from a file
+    void loadFromFile(const string& filename) {
+        ifstream in(filename);
+        if (in.is_open()) {
+            size_t size;
+            in >> size;
+            products.clear();
+            for (size_t i = 0; i < size; ++i) {
+                auto product = make_unique<Product>("", 0.0, 0);
+                product->load(in);
+                products.push_back(move(product));
+            }
+            in.close();
+            cout << "Inventory loaded from " << filename << endl;
+        } else {
+            cout << "Failed to open file for reading.\n";
+        }
+    }
 };
 
 int main(int argc, char const *argv[]) {
@@ -102,7 +152,9 @@ int main(int argc, char const *argv[]) {
         cout << "2. Search Inventory\n";
         cout << "3. Add to Inventory\n";
         cout << "4. Take from Inventory\n";
-        cout << "5. Exit\n";
+        cout << "5. Save Inventory to File\n";
+        cout << "6. Load Inventory from File\n";
+        cout << "7. Exit\n";
         cout << "Enter your choice: ";
         cin >> choice;
         cout << endl;
@@ -116,9 +168,9 @@ int main(int argc, char const *argv[]) {
             cout << "  --------------------------\n";
             cout << "  Search Inventory\n";
             cout << "  --------------------------\n";
-            cout << "  1. Search By Name\n";
-            cout << "  2. Search By Price\n";
-            cout << "  3. Search By Quantity\n";
+            cout << "  1. Search by Name\n";
+            cout << "  2. Search by Price\n";
+            cout << "  3. Search by Quantity\n";
             cout << "  Enter your choice: ";
             int search_choice;
             cin >> search_choice;
@@ -247,13 +299,25 @@ int main(int argc, char const *argv[]) {
             }
             
             inventory.takeProduct(take_name, take_quantity);
-// 5. Exit
+// 5. Save Inventory to File
         } else if (choice == "5") {
+            string filename;
+            cout << "Enter filename to save inventory: ";
+            cin >> filename;
+            inventory.saveToFile(filename);
+// 6. Load Inventory from File
+        } else if (choice == "6") {
+            string filename;
+            cout << "Enter filename to load inventory: ";
+            cin >> filename;
+            inventory.loadFromFile(filename);
+// 7. Exit
+        } else if (choice == "7") {
             cout << "Goodbye!\n";
         } else {
             cout << "Invalid choice.\n";
         }
-    } while (choice != "5");
+    } while (choice != "7");
 
     return 0;
 }
