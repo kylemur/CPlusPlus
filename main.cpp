@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <memory>
 using namespace std;
-
 
 class Product {
 private:
@@ -11,37 +11,91 @@ private:
     double total_value;
 
 public:
-    void setName(string n) { 
-        name = n; 
-        }
+    Product(string name, double price, int quantity)
+        : name(name), price(price), quantity(quantity), total_value(price * quantity) {}
+
+    void setName(string n) { name = n; }
     void setPrice(double p) { price = p; }
     void setQuantity(int q) { quantity = q; }
     void setTotalValue() { total_value = price * quantity; }
 
-    string getName() { 
-        return name; 
-        }
-    double getPrice() { return price; }
-    int getQuantity() { return quantity; }
-    double getTotalValue() { return total_value; }
+    string getName() const { return name; }
+    double getPrice() const { return price; }
+    int getQuantity() const { return quantity; }
+    double getTotalValue() const { return total_value; }
 
-    void display() { 
-        setTotalValue();
-        cout << "Name: " << name << endl;
+    void display() const { 
+        cout << "\nName: " << name << endl;
         cout << "Price: $" << price << endl;
         cout << "Quantity: " << quantity << endl;
         cout << "Total Value: $" << total_value << endl << endl;
     }
 };
 
+class Inventory {
+private:
+    vector<unique_ptr<Product>> products;
 
-int main(int argc, char const *argv[])
-{
-    vector<Product> inventory;
+public:
+    ~Inventory() = default;
 
-    int choice;
-    do
-    {
+    void addProduct(unique_ptr<Product> product) {
+        products.push_back(move(product));
+    }
+
+    void takeProduct(const string& productName, int quantity) {
+        for (auto& product : products) {
+            if (product->getName() == productName) {
+                int current_quantity = product->getQuantity();
+                if (quantity <= current_quantity) {
+                    product->setQuantity(current_quantity - quantity);
+                    product->setTotalValue();
+                    cout << quantity << " " << productName << "(s) taken from inventory. New quantity: " << product->getQuantity() << endl;
+                } else {
+                    cout << "Invalid quantity.\n";
+                }
+                return;
+            }
+        }
+        cout << "Product not found.\n";
+    }
+
+    void displayInventory() const {
+        for (const auto& product : products) {
+            product->display();
+        }
+        if (products.empty()) {
+            cout << "Inventory is empty.\n";
+        }
+    }
+
+    const vector<unique_ptr<Product>>& getProducts() const {
+        return products;
+    }
+
+    Product* getProduct(const string& productName) const {
+        for (const auto& product : products) {
+            if (product->getName() == productName) {
+                return product.get();
+            }
+        }
+        return nullptr; // Return nullptr if product not found
+    }
+
+    double getTotalValue() const {
+        double total = 0.0;
+        for (const auto& product : products) {
+            total += product->getTotalValue();
+        }
+        return total;
+    }
+};
+
+int main(int argc, char const *argv[]) {
+    Inventory inventory;
+
+    string choice;
+    do {
         cout << "\nMenu\n";
         cout << "------------------------\n";
         cout << "1. Display All Inventory\n";
@@ -52,120 +106,79 @@ int main(int argc, char const *argv[])
         cout << "Enter your choice: ";
         cin >> choice;
         cout << endl;
-    
-        // Display All Inventory
-        if (choice == 1) 
-        {
-            double inventory_value = 0;
-            
-            if (!inventory.empty())
-            {
-                for (int i = 0; i < inventory.size(); i++)
-                {
-                    inventory[i].display();
-                }
-            }
-            else
-            {
-                cout << "Inventory is empty.\n";
-            }
 
-            for (int i = 0; i < inventory.size(); i++)
-            {
-                inventory_value += inventory[i].getTotalValue();
-            }
-            cout << "Inventory Value: $" << inventory_value << endl;
-        }
-
-        // Search Inventory
-        else if (choice == 2) 
-        {
-            cout << "  --------------------\n";
+// 1. Display All Inventory
+        if (choice == "1") {
+            inventory.displayInventory();
+            cout << "Total Value: $" << inventory.getTotalValue() << endl;
+// 2. Search Inventory
+        } else if (choice == "2") {
+            cout << "  --------------------------\n";
             cout << "  Search Inventory\n";
-            cout << "  --------------------\n";
-            cout << "  1. Search by name\n";
-            cout << "  2. Search by price\n";
-            cout << "  3. Search by quantity\n";
+            cout << "  --------------------------\n";
+            cout << "  1. Search By Name\n";
+            cout << "  2. Search By Price\n";
+            cout << "  3. Search By Quantity\n";
             cout << "  Enter your choice: ";
             int search_choice;
             cin >> search_choice;
             cout << endl;
-    
-            if (search_choice == 1) // Search by name
-            {
+
+            bool product_found = false;
+
+            if (search_choice == 1) { // Search By Name
                 string search_name;
                 cout << "Enter product name to search: ";
                 cin >> search_name;
 
-                bool product_found = false;
-                for (int i = 0; i < inventory.size(); i++) {
-                    if (search_name == inventory[i].getName()) {
+                for (const auto& product : inventory.getProducts()) {
+                    if (product->getName() == search_name) {
                         product_found = true;
-                        inventory[i].display();
+                        product->display();
                         break;
                     }
                 }
-                if (!product_found) {
-                    cout << "Product not found.\n";
-                }
-            }
-            else if (search_choice == 2) // Search by price
-            {
-                double search_price_max;
-                double search_price_min;
-                cout << "Enter max product price: $";
-                cin >> search_price_max;
-                cout << "Enter min product price: $";
-                cin >> search_price_min;
+            } else if (search_choice == 2) { // Search By Price
+                double max_price;
+                cout << "Enter max price to search: ";
+                cin >> max_price;
 
-                bool product_found = false;
-                for (int i = 0; i < inventory.size(); i++)
-                {
-                    if (inventory[i].getPrice() <= search_price_max && inventory[i].getPrice() >= search_price_min)
-                    {
-                        product_found = true;
-                        inventory[i].display();
-                        break;
-                    }
-                }
-                if (!product_found)
-                {
-                    cout << "No products found.\n";
-                }
-            }
-            else if (search_choice == 3) // Search by quantity
-            {
-                int search_quantity_max;
-                int search_quantity_min;
-                cout << "Enter max product quantity: ";
-                cin >> search_quantity_max;
-                cout << "Enter min product quantity: ";
-                cin >> search_quantity_min;
+                double min_price;
+                cout << "Enter min price to search: ";
+                cin >> min_price;
 
-                bool product_found = false;
-                for (int i = 0; i < inventory.size(); i++)
-                {
-                    if (inventory[i].getPrice() <= search_quantity_max && inventory[i].getPrice() >= search_quantity_min)
-                    {
+                for (const auto& product : inventory.getProducts()) {
+                    if (product->getPrice() < max_price && product->getPrice() > min_price) {
                         product_found = true;
-                        inventory[i].display();
+                        product->display();
                         break;
                     }
                 }
-                if (!product_found)
-                {
-                    cout << "No products found.\n";
+            } else if (search_choice == 3) { // Search By Quantity
+                int max_quantity;
+                cout << "Enter max quantity to search: ";
+                cin >> max_quantity;
+
+                double min_quantity;
+                cout << "Enter min quantity to search: ";
+                cin >> min_quantity;
+
+                for (const auto& product : inventory.getProducts()) {
+                    if (product->getQuantity() < max_quantity && product->getQuantity() > min_quantity) {
+                        product_found = true;
+                        product->display();
+                        break;
+                    }
                 }
-            }
-            else
-            {
+            } else {
                 cout << "Invalid choice.\n";
             }
-        }
 
-        // Add to Inventory
-        else if (choice == 3) 
-        {
+            if (!product_found) {
+                cout << "Product not found.\n";
+            }
+// 3. Add to Inventory
+        } else if (choice == "3") {
             cout << "  --------------------------\n";
             cout << "  Add to Inventory\n";
             cout << "  --------------------------\n";
@@ -176,108 +189,71 @@ int main(int argc, char const *argv[])
             cin >> add_choice;
             cout << endl;
 
-            if (add_choice == 1) // Add to Existing Product
-            {
+            if (add_choice == 1) { // Add to Existing Product
                 string add_name;
                 cout << "Enter product name to add: ";
                 cin >> add_name;
 
                 bool product_found = false;
-                for (int i = 0; i < inventory.size(); i++) {
-                    if (add_name == inventory[i].getName()) {
+                for (const auto& product : inventory.getProducts()) {
+                    if (add_name == product->getName()) {
                         product_found = true;
                         int add_quantity;
-
-                        cout << "Current quantity: " << inventory[i].getQuantity() << endl;
                         cout << "Enter quantity to add: ";
                         cin >> add_quantity;
-
-                        inventory[i].setQuantity(inventory[i].getQuantity() + add_quantity);
-                        cout << add_quantity << " " << add_name << "(s) added to inventory.\n";
-                       
-                        inventory[i].display();
-                        break; // Exit the loop once the product is found and updated
+                        product->setQuantity(product->getQuantity() + add_quantity);
+                        product->setTotalValue();
+                        cout << add_quantity << " " << add_name << " added to inventory.\n";
+                        break;
                     }
                 }
                 if (!product_found) {
                     cout << "Product not found.\n";
                 }
-            }
-            else if (add_choice == 2) // Add New Product
-            {
-                Product product1;
-                string p_name;
-                double p_price;
-                int p_quantity;
+            } else if (add_choice == 2) { // Add New Product
+                string new_name;
+                double new_price;
+                int new_quantity;
 
                 cout << "Enter product name: ";
-                cin >> p_name;
-                product1.setName(p_name);
-
+                cin >> new_name;
                 cout << "Enter product price: $";
-                cin >> p_price;
-                product1.setPrice(p_price);
-
+                cin >> new_price;
                 cout << "Enter product quantity: ";
-                cin >> p_quantity;
-                product1.setQuantity(p_quantity);
+                cin >> new_quantity;
 
-                product1.setTotalValue();
-                cout << "Total Value: $" << product1.getTotalValue() << endl;
-
-                inventory.push_back(product1);
-                cout << p_quantity << " " << p_name << "(s) added to inventory.\n";
-            }
-            else
-            {
+                auto new_product = make_unique<Product>(new_name, new_price, new_quantity);
+                new_product->display();
+                inventory.addProduct(move(new_product));
+                cout << "New product added to inventory.\n";
+            } else {
                 cout << "Invalid choice.\n";
             }
-        }
-
-        // Take from Inventory
-        else if (choice == 4) 
-        {
-            int take_quantity;
+// 4. Take from Inventory
+        } else if (choice == "4") {
+            cout << "Take from Inventory\n";
+            int take_quantity = 0;
             string take_name;
             cout << "Enter product name: ";
             cin >> take_name;
+            
+            Product* product = inventory.getProduct(take_name);
+            if (product) {
+                int current_quantity = product->getQuantity();
+                cout << "Current quantity: " << current_quantity << endl;
 
-            bool product_found = false;
-
-            for (auto& product : inventory) {  // auto& finds correct object (product) in vector (inventory)
-                if (product.getName() == take_name) {
-                    product_found = true;
-                    int current_quantity = product.getQuantity();
-                    cout << "Current quantity: " << current_quantity << endl;
-                    cout << "Enter quantity to take: ";
-                    cin >> take_quantity;
-
-                    if (take_quantity <= current_quantity) {
-                        int new_quantity = current_quantity - take_quantity;
-                        product.setQuantity(new_quantity);
-                        cout << take_quantity << " " << take_name << "(s) taken from inventory. New quantity: " << new_quantity << endl;
-                    } else {
-                        cout << "Invalid quantity.\n";
-                    }
-                    break;
-                }
+                cout << "Enter quantity to take: ";
+                cin >> take_quantity;
             }
-            if (product_found == false) {
-                cout << "Product not found.\n";
-            }
-        }
-
-        // Exit
-        else if (choice == 5) 
-        {
+            
+            inventory.takeProduct(take_name, take_quantity);
+// 5. Exit
+        } else if (choice == "5") {
             cout << "Goodbye!\n";
-        }
-
-        else
-        {
+        } else {
             cout << "Invalid choice.\n";
         }
-    } while (choice != 5);
+    } while (choice != "5");
 
     return 0;
 }
