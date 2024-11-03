@@ -6,8 +6,7 @@ This program manages inventory for products and saves the data (name, price, and
 
 Many companies use C++ and/or C#, so I wanted to understand the similarities and differences of the languages. I learned that C++ can use -> (arrow character like in C) or . (dot character like in C# or Python) to access attributes and methods. C++ is different from other languages that I know because ituses >> and << characters for input and output.
 
-
-[Software Demo Video](http://youtube.link.goes.here)
+[Software Demo Video](https://youtu.be/V42rBJo8c70)
 
 # Development Environment
 
